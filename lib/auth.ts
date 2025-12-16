@@ -6,7 +6,6 @@ import { sendEmail } from "./mail-sender";
 import { twoFactor } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 import {
-  deleteAccountTemplate,
   emailVerificationTemplate,
   resetPasswordTemplate,
   successResetPasswordTemplate,
@@ -40,12 +39,6 @@ export const auth = betterAuth({
     },
     deleteUser: {
       enabled: true,
-      // sendDeleteAccountVerification: async ({ user, url }) => {
-      //   await sendEmail({
-      //     to: user.email,
-      //     ...deleteAccountTemplate(url),
-      //   });
-      // },
     },
   },
   emailVerification: {
