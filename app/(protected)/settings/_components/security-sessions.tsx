@@ -29,32 +29,20 @@ import {
   Watch,
   Gamepad2,
 } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { UAParser } from "ua-parser-js";
-import { useRequireAuth } from "@/hooks/use-auth-redirect";
 import LoadingButton from "@/components/loading-button";
 import { useState } from "react";
-import { useSessions } from "@/hooks/use-sessions";
-
-interface Session {
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
-  userId: string;
-  expiresAt: Date;
-  token: string;
-  ipAddress?: string | null | undefined | undefined;
-  userAgent?: string | null | undefined | undefined;
-}
+import { Session } from "@/lib/auth";
 
 function RevokeSessionDialog({
   session,
   osName,
   onSuccess,
 }: {
-  session: Session;
+  session: Session["session"];
   osName: string;
   onSuccess?: () => void;
 }) {
@@ -76,8 +64,8 @@ function RevokeSessionDialog({
 
   const handleRevokeSession = async () => {
     await revokeSessionMutation.mutateAsync(session.token);
-    setOpen(false);
     onSuccess?.();
+    setOpen(false);
   };
 
   return (
@@ -127,8 +115,8 @@ function RevokeAllSessionsDialog({ onSuccess }: { onSuccess?: () => void }) {
 
   const handleRevokeAllSessions = async () => {
     await revokeOtherSessionsMutation.mutateAsync();
-    setOpen(false);
     onSuccess?.();
+    setOpen(false);
   };
 
   return (
@@ -180,15 +168,23 @@ function getDeviceIcon(deviceType: string | undefined) {
   }
 }
 
-export default function SecuritySessions() {
-  const currentSession = useRequireAuth();
-  if (currentSession.error) {
-    toast.error(`Failed to get session: ${currentSession.error.message}`);
-  }
+type SecuritySessionsProps = {
+  session: Session["session"];
+};
 
-  const { sessions, error, invalidateSessions } = useSessions();
-  if (error) {
-    toast.error(`Failed to get sessions: ${error.message}`);
+export default function SecuritySessions({ session }: SecuritySessionsProps) {
+  const listSessions = useQuery({
+    queryKey: ["list-sessions"],
+    queryFn: async () => {
+      const sessions = await authClient.listSessions();
+      if (sessions.error) {
+        throw sessions.error;
+      }
+      return sessions.data;
+    },
+  });
+  if (listSessions.error) {
+    toast.error(`Failed to get sessions: ${listSessions.error.message}`);
   }
 
   return (
@@ -203,14 +199,16 @@ export default function SecuritySessions() {
       <Card className="md:flex-2/3">
         <CardContent>
           <FieldGroup>
-            {sessions?.map((session) => {
-              const isCurrent = session.id === currentSession.session?.id;
-              const parser = new UAParser(session.userAgent || "");
+            {listSessions.data?.map((sess) => {
+              const isCurrent = sess.id === session.id;
+              const parser = new UAParser(sess.userAgent || "");
               const browser = parser.getBrowser();
               const os = parser.getOS();
               const device = parser.getDevice();
+
+              console.log(browser, os, device, sess);
               return (
-                <Field key={session.id}>
+                <Field key={sess.id}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
@@ -227,15 +225,17 @@ export default function SecuritySessions() {
                         </div>
                         <FieldDescription className="text-xs">
                           {browser.name} • {browser.version} •{" "}
-                          {session.createdAt.toDateString()}
+                          {sess.createdAt.toDateString()}
                         </FieldDescription>
                       </div>
                     </div>
                     {!isCurrent && (
                       <RevokeSessionDialog
-                        session={session}
+                        session={sess}
                         osName={os.name ?? "Unknown"}
-                        onSuccess={invalidateSessions}
+                        onSuccess={() => {
+                          listSessions.refetch();
+                        }}
                       />
                     )}
                   </div>
@@ -245,7 +245,11 @@ export default function SecuritySessions() {
           </FieldGroup>
         </CardContent>
         <CardFooter>
-          <RevokeAllSessionsDialog onSuccess={invalidateSessions} />
+          <RevokeAllSessionsDialog
+            onSuccess={() => {
+              listSessions.refetch();
+            }}
+          />
         </CardFooter>
       </Card>
     </div>

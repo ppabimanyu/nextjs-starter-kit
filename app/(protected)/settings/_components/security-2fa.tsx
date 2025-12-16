@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/field";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +30,7 @@ import {
   ArrowLeft,
   Eye,
   EyeClosed,
+  ShieldAlert,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PasswordInput } from "@/components/password-input";
@@ -50,18 +50,24 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import QRCode from "react-qr-code";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
+import { Session } from "@/lib/auth";
+import { env } from "@/lib/env";
+import { LoadingContent } from "@/components/loading";
+import {
+  invalidateRecoveryCodes,
+  useGetRecoveryCodes,
+} from "@/lib/api/auth/2fa/get-recovery-code";
 
-type Step = "password" | "qrcode" | "verify";
+type Step = "password" | "setup-totp" | "verify";
 
-// Simulated secret key for demo purposes
-const DEMO_SECRET = "JBSWY3DPEHPK3PXP";
-const DEMO_OTP_URI = `otpauth://totp/MyApp:user@example.com?secret=${DEMO_SECRET}&issuer=MyApp`;
-
-function Enable2FADialog({ onSuccess }: { onSuccess?: () => void }) {
+function Enable2FADialog() {
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<Step>("password");
-  const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [step, setStep] = useState<Step>("password");
+  const [totpUri, setTotpUri] = useState<string>("");
+  const [totpSecret, setTotpSecret] = useState<string>("");
 
   // Password verification form
   const passwordForm = useForm({
@@ -73,12 +79,21 @@ function Enable2FADialog({ onSuccess }: { onSuccess?: () => void }) {
         password: z.string().min(1, "Password is required"),
       }),
     },
-    onSubmit: async () => {
-      setIsLoading(true);
-      // Simulate password verification API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setIsLoading(false);
-      setStep("qrcode");
+    onSubmit: async ({ value }) => {
+      const { error, data } = await authClient.twoFactor.enable({
+        password: value.password.trim(),
+        issuer: env.NEXT_PUBLIC_APP_NAME,
+      });
+      if (error) {
+        toast.error(`Failed to enable 2FA: ${error.message}`);
+      } else {
+        const urlParams = new URLSearchParams(data.totpURI.split("?")[1]);
+        const secret = urlParams.get("secret") ?? "";
+
+        setTotpUri(data.totpURI);
+        setTotpSecret(secret);
+        setStep("setup-totp");
+      }
     },
   });
 
@@ -92,33 +107,34 @@ function Enable2FADialog({ onSuccess }: { onSuccess?: () => void }) {
         code: z.string().length(6, "Code must be exactly 6 digits"),
       }),
     },
-    onSubmit: async () => {
-      setIsLoading(true);
-      // Simulate TOTP verification API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setIsLoading(false);
-      setOpen(false);
-      resetDialog();
-      onSuccess?.();
+    onSubmit: async ({ value }) => {
+      const { error } = await authClient.twoFactor.verifyTotp({
+        code: value.code,
+        trustDevice: false,
+      });
+      if (error) {
+        toast.error(`Failed to verify 2FA: ${error.message}`);
+      } else {
+        toast.success("2FA enabled successfully");
+        handleOpenChange(false);
+      }
     },
   });
-
-  const resetDialog = () => {
-    setStep("password");
-    passwordForm.reset();
-    verifyForm.reset();
-    setCopied(false);
-  };
 
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (!isOpen) {
-      resetDialog();
+      passwordForm.reset();
+      verifyForm.reset();
+      setCopied(false);
+      setStep("password");
+      setTotpUri("");
+      setTotpSecret("");
     }
   };
 
   const handleCopySecret = async () => {
-    await navigator.clipboard.writeText(DEMO_SECRET);
+    await navigator.clipboard.writeText(totpSecret);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -171,7 +187,7 @@ function Enable2FADialog({ onSuccess }: { onSuccess?: () => void }) {
                   <LoadingButton
                     type="button"
                     onClick={() => passwordForm.handleSubmit()}
-                    isLoading={isSubmitting || isLoading}
+                    isLoading={isSubmitting}
                     disabled={!canSubmit}
                   >
                     Continue
@@ -184,7 +200,7 @@ function Enable2FADialog({ onSuccess }: { onSuccess?: () => void }) {
         )}
 
         {/* Step 2: QR Code Display */}
-        {step === "qrcode" && (
+        {step === "setup-totp" && (
           <>
             <DialogHeader>
               <DialogTitle>Set Up Authenticator</DialogTitle>
@@ -196,7 +212,7 @@ function Enable2FADialog({ onSuccess }: { onSuccess?: () => void }) {
             <div className="flex flex-col items-center gap-4">
               {/* QR Code */}
               <div className="bg-white p-4 rounded-lg">
-                <QRCode value={DEMO_OTP_URI} size={180} />
+                <QRCode value={totpUri} size={180} />
               </div>
 
               {/* Secret Key */}
@@ -204,10 +220,7 @@ function Enable2FADialog({ onSuccess }: { onSuccess?: () => void }) {
                 <FieldLabel>Secret Key</FieldLabel>
                 <div className="flex gap-2">
                   <InputGroup>
-                    <InputGroupInput
-                      placeholder="https://x.com/shadcn"
-                      readOnly
-                    />
+                    <InputGroupInput placeholder={totpSecret} readOnly />
                     <InputGroupAddon align="inline-end">
                       <InputGroupButton
                         aria-readonly
@@ -215,7 +228,7 @@ function Enable2FADialog({ onSuccess }: { onSuccess?: () => void }) {
                         title="Copy"
                         size="icon-xs"
                         onClick={handleCopySecret}
-                        value={DEMO_SECRET}
+                        value={totpSecret}
                       >
                         {copied ? <Check /> : <Copy />}
                       </InputGroupButton>
@@ -275,7 +288,7 @@ function Enable2FADialog({ onSuccess }: { onSuccess?: () => void }) {
               </verifyForm.Field>
             </FieldGroup>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setStep("qrcode")}>
+              <Button variant="outline" onClick={() => setStep("setup-totp")}>
                 <ArrowLeft />
                 Back
               </Button>
@@ -286,11 +299,11 @@ function Enable2FADialog({ onSuccess }: { onSuccess?: () => void }) {
                   <LoadingButton
                     type="button"
                     onClick={() => verifyForm.handleSubmit()}
-                    isLoading={isSubmitting || isLoading}
+                    isLoading={isSubmitting}
                     disabled={!canSubmit}
                   >
                     <ShieldCheck />
-                    Enable 2FA
+                    Verify
                   </LoadingButton>
                 )}
               </verifyForm.Subscribe>
@@ -302,40 +315,200 @@ function Enable2FADialog({ onSuccess }: { onSuccess?: () => void }) {
   );
 }
 
-// Generate random recovery codes
-function generateRecoveryCodes(): string[] {
-  const codes: string[] = [];
-  for (let i = 0; i < 10; i++) {
-    const code = Array.from({ length: 10 }, () =>
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".charAt(
-        Math.floor(Math.random() * 36)
-      )
-    ).join("");
-    // Format as XXXXX-XXXXX
-    codes.push(`${code.slice(0, 5)}-${code.slice(5)}`);
-  }
-  return codes;
-}
+function Disable2FADialog() {
+  const [open, setOpen] = useState(false);
 
-export default function Security2FA() {
-  const [showCodes, setShowCodes] = useState(false);
-  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
-  const [copied, setCopied] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  // Password verification form
+  const passwordForm = useForm({
+    defaultValues: {
+      password: "",
+    },
+    validators: {
+      onSubmit: z.object({
+        password: z.string().min(1, "Password is required"),
+      }),
+    },
+    onSubmit: async ({ value }) => {
+      const { error } = await authClient.twoFactor.disable({
+        password: value.password.trim(),
+      });
+      if (error) {
+        toast.error(`Failed to disable 2FA: ${error.message}`);
+      } else {
+        toast.success("2FA disabled successfully");
+        handleOpenChange(false);
+      }
+    },
+  });
 
-  const handleGenerateCodes = async () => {
-    setIsGenerating(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const newCodes = generateRecoveryCodes();
-    setRecoveryCodes(newCodes);
-    setShowCodes(true);
-    setIsGenerating(false);
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      passwordForm.reset();
+    }
   };
 
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button className="ml-auto" variant="destructive">
+          <ShieldAlert />
+          Disable 2FA
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Verify Your Identity</DialogTitle>
+          <DialogDescription>
+            Enter your password to disable two-factor authentication.
+          </DialogDescription>
+        </DialogHeader>
+        <FieldGroup>
+          <passwordForm.Field name="password">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor="2fa-password">Password</FieldLabel>
+                <PasswordInput
+                  id="2fa-password"
+                  placeholder="Enter your password"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  autoComplete="current-password"
+                />
+                <FieldError errors={field.state.meta.errors} />
+              </Field>
+            )}
+          </passwordForm.Field>
+        </FieldGroup>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <passwordForm.Subscribe
+            selector={(state) => [state.isSubmitting, state.canSubmit]}
+          >
+            {([isSubmitting, canSubmit]) => (
+              <LoadingButton
+                type="button"
+                variant="destructive"
+                onClick={() => passwordForm.handleSubmit()}
+                isLoading={isSubmitting}
+                disabled={!canSubmit}
+              >
+                <ShieldAlert />
+                Disable 2FA
+              </LoadingButton>
+            )}
+          </passwordForm.Subscribe>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function GenerateRecoveryCodesDialog() {
+  const [open, setOpen] = useState(false);
+
+  // Password verification form
+  const passwordForm = useForm({
+    defaultValues: {
+      password: "",
+    },
+    validators: {
+      onSubmit: z.object({
+        password: z.string().min(1, "Password is required"),
+      }),
+    },
+    onSubmit: async ({ value }) => {
+      const { error } = await authClient.twoFactor.generateBackupCodes({
+        password: value.password.trim(),
+      });
+      if (error) {
+        toast.error(`Failed to generate recovery codes: ${error.message}`);
+      } else {
+        toast.success("Recovery codes generated successfully");
+        await invalidateRecoveryCodes();
+        handleOpenChange(false);
+      }
+    },
+  });
+
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      passwordForm.reset();
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button className="ml-auto" variant={"outline"}>
+          <RotateCw />
+          Generate Recovery Codes
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Verify Your Identity</DialogTitle>
+          <DialogDescription>
+            Enter your password to generate recovery codes.
+          </DialogDescription>
+        </DialogHeader>
+        <FieldGroup>
+          <passwordForm.Field name="password">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor="2fa-password">Password</FieldLabel>
+                <PasswordInput
+                  id="2fa-password"
+                  placeholder="Enter your password"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  autoComplete="current-password"
+                />
+                <FieldError errors={field.state.meta.errors} />
+              </Field>
+            )}
+          </passwordForm.Field>
+        </FieldGroup>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <passwordForm.Subscribe
+            selector={(state) => [state.isSubmitting, state.canSubmit]}
+          >
+            {([isSubmitting, canSubmit]) => (
+              <LoadingButton
+                type="button"
+                onClick={() => passwordForm.handleSubmit()}
+                isLoading={isSubmitting}
+                disabled={!canSubmit}
+              >
+                <RotateCw />
+                Generate
+              </LoadingButton>
+            )}
+          </passwordForm.Subscribe>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RecoveryCodes() {
+  const [copied, setCopied] = useState(false);
+  const recoveryCodes = useGetRecoveryCodes();
+  if (recoveryCodes.isPending) {
+    return <LoadingContent />;
+  }
+
   const handleCopyCodes = async () => {
-    const codesText = recoveryCodes.join("\n");
-    await navigator.clipboard.writeText(codesText);
+    const codesText = recoveryCodes.data?.join("\n");
+    await navigator.clipboard.writeText(codesText ?? "");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -343,8 +516,8 @@ export default function Security2FA() {
   const handleDownloadCodes = () => {
     const codesText = `Recovery Codes for MyApp\n${"=".repeat(
       30
-    )}\n\nKeep these codes in a safe place. Each code can only be used once.\n\n${recoveryCodes
-      .map((code, i) => `${i + 1}. ${code}`)
+    )}\n\nKeep these codes in a safe place. Each code can only be used once.\n\n${recoveryCodes?.data
+      ?.map((code, i) => `${i + 1}. ${code}`)
       .join("\n")}\n\nGenerated: ${new Date().toLocaleString()}`;
     const blob = new Blob([codesText], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -354,6 +527,45 @@ export default function Security2FA() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  return (
+    <div className="rounded-lg border bg-muted/50 p-4 w-full space-y-4">
+      <div className="flex justify-end">
+        <GenerateRecoveryCodesDialog />
+      </div>
+      <div className="grid grid-cols-2 gap-2 font-mono text-sm">
+        {recoveryCodes.data?.map((code, index) => (
+          <div
+            key={index}
+            className="bg-background rounded px-3 py-2 text-center"
+          >
+            {code}
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={handleCopyCodes}>
+          {copied ? <Check className="text-green-500" /> : <Copy />}
+          {copied ? "Copied!" : "Copy All"}
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleDownloadCodes}>
+          Download
+        </Button>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Each code can only be used once. Store them securely and don&apos;t
+        share them with anyone.
+      </p>
+    </div>
+  );
+}
+
+type Security2FAProps = {
+  user: Session["user"];
+};
+
+export default function Security2FA({ user }: Security2FAProps) {
+  const [showCodes, setShowCodes] = useState(false);
 
   return (
     <div className="flex flex-col md:flex-row gap-2 md:gap-4 w-full">
@@ -379,91 +591,44 @@ export default function Security2FA() {
                     to generate verification codes.
                   </FieldDescription>
                 </div>
-                <Badge variant="destructive">Disabled</Badge>
-              </div>
-            </Field>
-            <Field>
-              <div className="flex flex-col gap-3">
-                <div className="flex md:flex-row flex-col md:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <FieldLabel className="flex items-center gap-2">
-                      <KeyRound className="h-4 w-4" />
-                      Recovery Codes
-                    </FieldLabel>
-                    <FieldDescription>
-                      Generate backup codes to access your account if you lose
-                      your 2FA device. Store these codes securely.
-                    </FieldDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    {recoveryCodes.length > 0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowCodes(!showCodes)}
-                      >
-                        {showCodes ? <Eye /> : <EyeClosed />}
-                        {showCodes ? "Hide" : "Show"}
-                      </Button>
-                    )}
-                    <LoadingButton
-                      variant="outline"
-                      size="sm"
-                      onClick={handleGenerateCodes}
-                      isLoading={isGenerating}
-                    >
-                      <RotateCw />
-                      {recoveryCodes.length > 0 ? "Regenerate" : "Generate"}
-                    </LoadingButton>
-                  </div>
-                </div>
-
-                {/* Recovery Codes Display */}
-                {showCodes && recoveryCodes.length > 0 && (
-                  <div className="rounded-lg border bg-muted/50 p-4">
-                    <div className="grid grid-cols-2 gap-2 font-mono text-sm">
-                      {recoveryCodes.map((code, index) => (
-                        <div
-                          key={index}
-                          className="bg-background rounded px-3 py-2 text-center"
-                        >
-                          {code}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-4 flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCopyCodes}
-                      >
-                        {copied ? (
-                          <Check className="text-green-500" />
-                        ) : (
-                          <Copy />
-                        )}
-                        {copied ? "Copied!" : "Copy All"}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleDownloadCodes}
-                      >
-                        Download
-                      </Button>
-                    </div>
-                    <p className="mt-3 text-xs text-muted-foreground">
-                      Each code can only be used once. Store them securely and
-                      don&apos;t share them with anyone.
-                    </p>
-                  </div>
+                {user.twoFactorEnabled ? (
+                  <Badge variant="default">Enabled</Badge>
+                ) : (
+                  <Badge variant="destructive">Disabled</Badge>
                 )}
               </div>
             </Field>
+            {user.twoFactorEnabled && (
+              <Field>
+                <div className="flex flex-col gap-3">
+                  <div className="flex md:flex-row flex-col md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <FieldLabel className="flex items-center gap-2">
+                        <KeyRound className="h-4 w-4" />
+                        Recovery Codes
+                      </FieldLabel>
+                      <FieldDescription>
+                        Generate backup codes to access your account if you lose
+                        your 2FA device. Store these codes securely.
+                      </FieldDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowCodes(!showCodes)}
+                    >
+                      {showCodes ? <Eye /> : <EyeClosed />}
+                      {showCodes ? "Hide" : "Show"}
+                    </Button>
+                  </div>
+                  {showCodes && <RecoveryCodes />}
+                </div>
+              </Field>
+            )}
           </FieldGroup>
         </CardContent>
         <CardFooter>
-          <Enable2FADialog />
+          {user.twoFactorEnabled ? <Disable2FADialog /> : <Enable2FADialog />}
         </CardFooter>
       </Card>
     </div>

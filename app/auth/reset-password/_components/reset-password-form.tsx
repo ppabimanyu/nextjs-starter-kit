@@ -53,7 +53,7 @@ export function ResetPasswordForm({
     },
     onSubmit: async ({ value }) => {
       const { error } = await authClient.resetPassword({
-        newPassword: value.password,
+        newPassword: value.password.trim(),
         token,
       });
       if (error) {
