@@ -32,6 +32,7 @@ import { Mail } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { env } from "@/lib/env";
+import { Session } from "@/lib/auth";
 
 function ChangeEmailDialog({ email }: { email: string }) {
   const [open, setOpen] = useState(false);
@@ -152,10 +153,10 @@ function ChangeEmailDialog({ email }: { email: string }) {
 }
 
 type ProfileEmailProps = {
-  email: string;
+  user?: Session["user"];
 };
 
-export default function ProfileEmail({ email }: ProfileEmailProps) {
+export default function ProfileEmail({ user }: ProfileEmailProps) {
   return (
     <div className="flex flex-col md:flex-row gap-2 md:gap-4 w-full">
       <Field className="md:flex-1/3">
@@ -171,7 +172,11 @@ export default function ProfileEmail({ email }: ProfileEmailProps) {
             <Field>
               <FieldLabel>Current Email Address</FieldLabel>
               <InputGroup className="max-w-sm">
-                <InputGroupInput value={email} type="email" disabled />
+                <InputGroupInput
+                  value={user?.email ?? ""}
+                  type="email"
+                  disabled
+                />
                 <InputGroupAddon>
                   <Mail />
                 </InputGroupAddon>
@@ -184,7 +189,7 @@ export default function ProfileEmail({ email }: ProfileEmailProps) {
           </FieldGroup>
         </CardContent>
         <CardFooter>
-          <ChangeEmailDialog email={email} />
+          <ChangeEmailDialog email={user?.email ?? ""} />
         </CardFooter>
       </Card>
     </div>

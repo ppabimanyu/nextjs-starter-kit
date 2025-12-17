@@ -17,18 +17,16 @@ import { z } from "zod";
 import LoadingButton from "@/components/loading-button";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
+import { Session } from "@/lib/auth";
 
 type ProfileSettingsProps = {
-  user: {
-    name: string;
-    image?: string | null | undefined;
-  };
+  user?: Session["user"];
 };
 
 export default function ProfileSettings({ user }: ProfileSettingsProps) {
   const profileForm = useForm({
     defaultValues: {
-      fullName: user.name,
+      fullName: user?.name ?? "",
     },
     validators: {
       onSubmit: z.object({
@@ -39,7 +37,7 @@ export default function ProfileSettings({ user }: ProfileSettingsProps) {
       }),
     },
     onSubmit: async ({ value }) => {
-      if (value.fullName.trim() === user.name) {
+      if (value.fullName.trim() === user?.name) {
         return;
       }
       const { error } = await authClient.updateUser({
@@ -69,9 +67,9 @@ export default function ProfileSettings({ user }: ProfileSettingsProps) {
               <FieldLabel>Profile Picture</FieldLabel>
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage src={user.image ?? ""} alt={user.name} />
+                  <AvatarImage src={user?.image ?? ""} alt={user?.name} />
                   <AvatarFallback>
-                    {user.name.slice(0, 2).toUpperCase()}
+                    {user?.name.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col gap-2">

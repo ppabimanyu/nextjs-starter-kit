@@ -16,8 +16,8 @@ export default function SecurityPage() {
   return (
     <div className="space-y-6 md:space-y-4 h-full">
       <SecurityPassword />
-      <Security2FA user={session.user!} />
-      <SecuritySessions session={session.session!} />
+      <Security2FA user={session.user} />
+      <SecuritySessions session={session.session} />
       <SecurityDelete />
     </div>
   );

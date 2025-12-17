@@ -169,7 +169,7 @@ function getDeviceIcon(deviceType: string | undefined) {
 }
 
 type SecuritySessionsProps = {
-  session: Session["session"];
+  session?: Session["session"];
 };
 
 export default function SecuritySessions({ session }: SecuritySessionsProps) {
@@ -200,7 +200,7 @@ export default function SecuritySessions({ session }: SecuritySessionsProps) {
         <CardContent>
           <FieldGroup>
             {listSessions.data?.map((sess) => {
-              const isCurrent = sess.id === session.id;
+              const isCurrent = sess.id === session?.id;
               const parser = new UAParser(sess.userAgent || "");
               const browser = parser.getBrowser();
               const os = parser.getOS();

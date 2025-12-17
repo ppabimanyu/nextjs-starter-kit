@@ -561,7 +561,7 @@ function RecoveryCodes() {
 }
 
 type Security2FAProps = {
-  user: Session["user"];
+  user?: Session["user"];
 };
 
 export default function Security2FA({ user }: Security2FAProps) {
@@ -591,14 +591,14 @@ export default function Security2FA({ user }: Security2FAProps) {
                     to generate verification codes.
                   </FieldDescription>
                 </div>
-                {user.twoFactorEnabled ? (
+                {user?.twoFactorEnabled ? (
                   <Badge variant="default">Enabled</Badge>
                 ) : (
                   <Badge variant="destructive">Disabled</Badge>
                 )}
               </div>
             </Field>
-            {user.twoFactorEnabled && (
+            {user?.twoFactorEnabled && (
               <Field>
                 <div className="flex flex-col gap-3">
                   <div className="flex md:flex-row flex-col md:items-center justify-between gap-4">
@@ -628,7 +628,7 @@ export default function Security2FA({ user }: Security2FAProps) {
           </FieldGroup>
         </CardContent>
         <CardFooter>
-          {user.twoFactorEnabled ? <Disable2FADialog /> : <Enable2FADialog />}
+          {user?.twoFactorEnabled ? <Disable2FADialog /> : <Enable2FADialog />}
         </CardFooter>
       </Card>
     </div>

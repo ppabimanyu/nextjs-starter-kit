@@ -13,8 +13,8 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6 md:space-y-4 h-full">
-      <ProfileSettings user={session.user!} />
-      <ProfileEmail email={session.user!.email} />
+      <ProfileSettings user={session.user} />
+      <ProfileEmail user={session.user} />
     </div>
   );
 }
