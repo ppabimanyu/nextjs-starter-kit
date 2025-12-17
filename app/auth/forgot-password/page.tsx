@@ -25,21 +25,19 @@ export default function ForgotPasswordPage() {
         ) : (
           <>
             <Logo />
-            <div className="flex flex-col gap-6">
-              <Card>
-                <CardHeader className="text-center">
-                  <CardTitle className="text-xl">Forgot Password</CardTitle>
-                  <CardDescription>
-                    Enter your email below to reset your password
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <FieldGroup>
-                    <ForgotPasswordForm onChangeSuccess={setSuccess} />
-                  </FieldGroup>
-                </CardContent>
-              </Card>
-            </div>
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className="text-xl">Forgot Password</CardTitle>
+                <CardDescription>
+                  Enter your email below to reset your password
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FieldGroup>
+                  <ForgotPasswordForm onChangeSuccess={setSuccess} />
+                </FieldGroup>
+              </CardContent>
+            </Card>
             <BackToSignInButton />
           </>
         )}

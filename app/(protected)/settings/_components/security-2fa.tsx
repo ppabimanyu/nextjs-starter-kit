@@ -264,6 +264,9 @@ function Enable2FADialog() {
               <verifyForm.Field name="code">
                 {(field) => (
                   <Field>
+                    <FieldLabel className="flex justify-center">
+                      Enter your 6-digit code
+                    </FieldLabel>
                     <InputOTP
                       maxLength={6}
                       pattern={REGEXP_ONLY_DIGITS_AND_CHARS}

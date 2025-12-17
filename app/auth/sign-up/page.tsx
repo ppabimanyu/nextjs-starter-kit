@@ -31,30 +31,28 @@ export default function SignUpPage() {
         ) : (
           <>
             <Logo />
-            <div className="flex flex-col gap-6">
-              <Card>
-                <CardHeader className="text-center">
-                  <CardTitle className="text-xl">Create an account</CardTitle>
-                  <CardDescription>
-                    Enter your information below to create your account
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <FieldGroup>
-                    <SignUpForm onChangeSuccess={setSuccess} />
-                    <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-                      Or continue with
-                    </FieldSeparator>
-                    <SocialSignOn />
-                    <FieldDescription className="text-center">
-                      Already have an account?{" "}
-                      <Link href="/auth/sign-in">Sign in</Link>
-                    </FieldDescription>
-                  </FieldGroup>
-                </CardContent>
-              </Card>
-              <Legal />
-            </div>
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className="text-xl">Create an account</CardTitle>
+                <CardDescription>
+                  Enter your information below to create your account
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FieldGroup>
+                  <SignUpForm onChangeSuccess={setSuccess} />
+                  <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
+                    Or continue with
+                  </FieldSeparator>
+                  <SocialSignOn />
+                  <FieldDescription className="text-center">
+                    Already have an account?{" "}
+                    <Link href="/auth/sign-in">Sign in</Link>
+                  </FieldDescription>
+                </FieldGroup>
+              </CardContent>
+            </Card>
+            <Legal />
           </>
         )}
       </div>

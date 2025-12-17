@@ -30,24 +30,20 @@ export default function ResetPasswordPage() {
         ) : (
           <>
             <Logo />
-            <div className="flex flex-col gap-6">
-              <Card>
-                <CardHeader className="text-center">
-                  <CardTitle className="text-xl">Reset Password</CardTitle>
-                  <CardDescription>
-                    Enter your new password below
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <FieldGroup>
-                    <ResetPasswordForm
-                      onChangeSuccess={setIsSuccess}
-                      token={token}
-                    />
-                  </FieldGroup>
-                </CardContent>
-              </Card>
-            </div>
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className="text-xl">Reset Password</CardTitle>
+                <CardDescription>Enter your new password below</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FieldGroup>
+                  <ResetPasswordForm
+                    onChangeSuccess={setIsSuccess}
+                    token={token}
+                  />
+                </FieldGroup>
+              </CardContent>
+            </Card>
           </>
         )}
       </div>
