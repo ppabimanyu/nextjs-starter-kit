@@ -24,7 +24,7 @@ export default function SignUpPage() {
   const [success, setSuccess] = useState(false);
 
   return (
-    <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+    <div className="bg-linear-to-br from-primary/20 via-background to-pink-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
       <div className="flex w-full max-w-sm flex-col gap-6">
         {success ? (
           <SignUpSuccess />
