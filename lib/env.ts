@@ -11,6 +11,8 @@ export const env = createEnv({
     AUTH_GITHUB_CLIENT_SECRET: z.string().min(1),
     AUTH_GOOGLE_CLIENT_ID: z.string().min(1),
     AUTH_GOOGLE_CLIENT_SECRET: z.string().min(1),
+    STORAGE_PROVIDER: z.enum(["local", "vercel-blob", "s3"]).default("local"),
+    BLOB_READ_WRITE_TOKEN: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_SITE_URL: z.string().min(1),
@@ -21,6 +23,7 @@ export const env = createEnv({
   },
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
+
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
     AUTH_REQUIRED_EMAIL_VERIFICATION:
@@ -29,6 +32,7 @@ export const env = createEnv({
     AUTH_GITHUB_CLIENT_SECRET: process.env.AUTH_GITHUB_CLIENT_SECRET,
     AUTH_GOOGLE_CLIENT_ID: process.env.AUTH_GOOGLE_CLIENT_ID,
     AUTH_GOOGLE_CLIENT_SECRET: process.env.AUTH_GOOGLE_CLIENT_SECRET,
+
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
     NEXT_PUBLIC_DEFAULT_AUTHENTICATED_PAGE:
@@ -37,5 +41,8 @@ export const env = createEnv({
       process.env.NEXT_PUBLIC_DEFAULT_UNAUTHENTICATED_PAGE,
     NEXT_PUBLIC_AUTH_ENABLE_2FA:
       process.env.NEXT_PUBLIC_AUTH_ENABLE_2FA == "true",
+
+    STORAGE_PROVIDER: process.env.STORAGE_PROVIDER,
+    BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
   },
 });
