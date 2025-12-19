@@ -38,8 +38,6 @@ cd nextjs-starter-kit
 
 ```bash
 bun install
-# or
-npm install
 ```
 
 3. Set up environment variables:
@@ -61,8 +59,6 @@ bunx prisma db push
 
 ```bash
 bun dev
-# or
-npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the app.
@@ -81,6 +77,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 | `NEXT_PUBLIC_APP_NAME` | Application name |
 | `NEXT_PUBLIC_SITE_URL` | Public site URL |
 | `STORAGE_PROVIDER` | Storage provider (`local` or `vercel-blob`) |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob storage read write token |
 
 See [`example.env`](./example.env) for all available options.
 
