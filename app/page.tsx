@@ -118,7 +118,7 @@ export default function Page() {
           </Button>
           <Button asChild variant="outline" size="lg">
             <Link
-              href="https://github.com"
+              href="https://github.com/ppabimanyu/nextjs-starter-kit"
               target="_blank"
               rel="noopener noreferrer"
             >
