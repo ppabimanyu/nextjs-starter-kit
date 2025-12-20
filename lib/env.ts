@@ -13,6 +13,15 @@ export const env = createEnv({
     AUTH_GOOGLE_CLIENT_SECRET: z.string().min(1),
     STORAGE_PROVIDER: z.enum(["local", "vercel-blob", "s3"]).default("local"),
     BLOB_READ_WRITE_TOKEN: z.string().optional(),
+
+    // SMTP Configuration for email sending
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.coerce.number().optional().default(587),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASSWORD: z.string().optional(),
+    SMTP_FROM_NAME: z.string().optional().default("NextJS StarterKit"),
+    SMTP_FROM_EMAIL: z.email().optional(),
+    SMTP_SECURE: z.boolean().optional().default(false),
   },
   client: {
     NEXT_PUBLIC_SITE_URL: z.string().min(1),
@@ -44,5 +53,14 @@ export const env = createEnv({
 
     STORAGE_PROVIDER: process.env.STORAGE_PROVIDER,
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
+
+    // SMTP Configuration
+    SMTP_HOST: process.env.SMTP_HOST,
+    SMTP_PORT: process.env.SMTP_PORT,
+    SMTP_USER: process.env.SMTP_USER,
+    SMTP_PASSWORD: process.env.SMTP_PASSWORD,
+    SMTP_FROM_NAME: process.env.SMTP_FROM_NAME,
+    SMTP_FROM_EMAIL: process.env.SMTP_FROM_EMAIL,
+    SMTP_SECURE: process.env.SMTP_SECURE === "true",
   },
 });

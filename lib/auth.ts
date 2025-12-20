@@ -49,6 +49,8 @@ export const auth = betterAuth({
         ...emailVerificationTemplate(url),
       });
     },
+    sendOnSignIn: env.AUTH_REQUIRED_EMAIL_VERIFICATION,
+    sendOnSignUp: env.AUTH_REQUIRED_EMAIL_VERIFICATION,
   },
   socialProviders: {
     github: {
