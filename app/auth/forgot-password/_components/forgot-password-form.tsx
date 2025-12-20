@@ -68,7 +68,7 @@ export function ForgotPasswordForm({
               isLoading={isSubmitting}
               disabled={!canSubmit}
             >
-              Continue
+              Send reset link
             </LoadingButton>
           </Field>
         )}
