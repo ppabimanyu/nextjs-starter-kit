@@ -40,6 +40,16 @@ export async function sendEmail({
   text,
   html,
 }: SendEmailOptions): Promise<SendEmailResult> {
+  if (env.MAIL_SENDER === "log") {
+    console.log("Email sent successfully:", {
+      to,
+      subject,
+      text,
+      html,
+    });
+    return { success: true, messageId: "" };
+  }
+
   const mailTransporter = getTransporter();
 
   const mailOptions = {

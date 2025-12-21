@@ -14,6 +14,8 @@ export const env = createEnv({
     STORAGE_PROVIDER: z.enum(["local", "vercel-blob", "s3"]).default("local"),
     BLOB_READ_WRITE_TOKEN: z.string().optional(),
 
+    MAIL_SENDER: z.enum(["smtp", "log"]).default("log"),
+
     // SMTP Configuration for email sending
     SMTP_HOST: z.string().optional(),
     SMTP_PORT: z.coerce.number().optional().default(587),
@@ -53,6 +55,8 @@ export const env = createEnv({
 
     STORAGE_PROVIDER: process.env.STORAGE_PROVIDER,
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
+
+    MAIL_SENDER: process.env.MAIL_SENDER,
 
     // SMTP Configuration
     SMTP_HOST: process.env.SMTP_HOST,
